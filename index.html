@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>익명 채팅방</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="chat-shell">
+      <aside class="side-rail" aria-label="접속 정보">
+        <div class="online-pill">
+          <span class="dot" aria-hidden="true"></span>
+          <strong id="onlineCount">0</strong>
+          <span>명</span>
+        </div>
+      </aside>
+
+      <section class="room" aria-label="익명 채팅방">
+        <header class="room-header">
+          <div>
+            <h1>익명 채팅방</h1>
+          </div>
+          <div id="status" class="status">연결 중</div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chatForm" class="composer" autocomplete="off">
+          <input
+            id="messageInput"
+            name="message"
+            type="text"
+            maxlength="500"
+            placeholder="메시지 입력"
+            aria-label="메시지"
+            required
+          />
+          <button type="submit">전송</button>
+        </form>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
