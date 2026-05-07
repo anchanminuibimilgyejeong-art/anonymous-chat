@@ -15,7 +15,7 @@ const buckets = new Map();
 const MAX_CLIENTS = 500;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_BODY_BYTES = 2048;
-const MESSAGE_HISTORY = 80;
+const MESSAGE_HISTORY = 40;
 const IDLE_CLIENT_MS = 1000 * 60 * 8;
 let dbPool = null;
 
@@ -153,9 +153,9 @@ async function saveMessage(message) {
   await dbPool.query(`
     DELETE FROM messages
     WHERE id NOT IN (
-      SELECT id FROM messages ORDER BY created_at DESC LIMIT 1000
+      SELECT id FROM messages ORDER BY created_at DESC LIMIT $1
     )
-  `);
+  `, [MESSAGE_HISTORY]);
 }
 
 function serveStatic(req, res, pathname) {
