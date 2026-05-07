@@ -1,10 +1,25 @@
 # 배포 메모
 
-이 앱은 설치 의존성 없이 Node.js 18 이상에서 실행됩니다.
+이 앱은 Node.js 18 이상에서 실행됩니다.
 
 ```bash
 npm start
 ```
+
+## 데이터베이스
+
+PostgreSQL 연결 문자열을 서버 환경 변수에 넣으면 채팅 기록이 DB에 저장됩니다.
+브라우저 파일(`public/app.js`)에는 DB 주소나 비밀번호를 절대 넣지 않습니다.
+
+Render 환경 변수:
+
+```text
+SERVER_SECRET=길고랜덤한문자
+DATABASE_URL=postgresql://...
+```
+
+`DATABASE_URL`이 없으면 DB 없이 메모리에만 저장됩니다.
+서버가 시작될 때 `messages` 테이블은 자동으로 만들어집니다.
 
 운영 배포 시 권장 설정:
 
@@ -21,7 +36,8 @@ npm start
 - 요청/메시지/스트림별 token bucket rate limit
 - 보안 헤더와 엄격한 CSP
 - 메시지를 `textContent`로 렌더링하여 스크립트 삽입 방지
-- 채팅 기록은 서버 메모리에만 짧게 보관
+- DB 사용 시 채팅 기록은 PostgreSQL에 저장, IP 원문은 저장하지 않음
+- DB 미사용 시 채팅 기록은 서버 메모리에만 짧게 보관
 
 주의:
 

@@ -7,6 +7,7 @@ const { URL } = require("url");
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SERVER_SECRET = process.env.SERVER_SECRET || crypto.randomBytes(32).toString("hex");
+const DATABASE_URL = process.env.DATABASE_URL;
 
 const clients = new Map();
 const recentMessages = [];
@@ -16,6 +17,7 @@ const MAX_MESSAGE_LENGTH = 500;
 const MAX_BODY_BYTES = 2048;
 const MESSAGE_HISTORY = 80;
 const IDLE_CLIENT_MS = 1000 * 60 * 8;
+let dbPool = null;
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -92,6 +94,68 @@ function broadcast(event, data) {
 
 function broadcastPresence() {
   broadcast("presence", { count: clients.size });
+}
+
+async function initDatabase() {
+  if (!DATABASE_URL) {
+    console.log("DATABASE_URL is not set. Chat history will stay in memory only.");
+    return;
+  }
+
+  const { Pool } = require("pg");
+  dbPool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000
+  });
+
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id UUID PRIMARY KEY,
+      alias TEXT NOT NULL,
+      text TEXT NOT NULL CHECK (char_length(text) <= 500),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+
+  const result = await dbPool.query(
+    `SELECT id, alias, text, EXTRACT(EPOCH FROM created_at) * 1000 AS at
+     FROM messages
+     ORDER BY created_at DESC
+     LIMIT $1`,
+    [MESSAGE_HISTORY]
+  );
+
+  recentMessages.length = 0;
+  for (const row of result.rows.reverse()) {
+    recentMessages.push({
+      id: row.id,
+      alias: row.alias,
+      text: row.text,
+      at: Number(row.at)
+    });
+  }
+
+  console.log("Database connected. Chat history is persisted.");
+}
+
+async function saveMessage(message) {
+  if (!dbPool) return;
+
+  await dbPool.query(
+    `INSERT INTO messages (id, alias, text, created_at)
+     VALUES ($1, $2, $3, to_timestamp($4 / 1000.0))`,
+    [message.id, message.alias, message.text, message.at]
+  );
+
+  await dbPool.query(`
+    DELETE FROM messages
+    WHERE id NOT IN (
+      SELECT id FROM messages ORDER BY created_at DESC LIMIT 1000
+    )
+  `);
 }
 
 function serveStatic(req, res, pathname) {
@@ -177,7 +241,7 @@ function handleMessage(req, res) {
     return;
   }
 
-  readJsonBody(req, res, (body) => {
+  readJsonBody(req, res, async (body) => {
     const text = cleanText(body.message);
     if (text.length < 1) {
       sendJson(res, 400, { error: "empty_message" });
@@ -192,8 +256,16 @@ function handleMessage(req, res) {
     };
     recentMessages.push(message);
     while (recentMessages.length > MESSAGE_HISTORY) recentMessages.shift();
-    broadcast("message", message);
-    sendJson(res, 201, { ok: true });
+    try {
+      await saveMessage(message);
+      broadcast("message", message);
+      sendJson(res, 201, { ok: true });
+    } catch (err) {
+      const failedIndex = recentMessages.findIndex((item) => item.id === message.id);
+      if (failedIndex !== -1) recentMessages.splice(failedIndex, 1);
+      console.error("Failed to save message:", err.message);
+      sendJson(res, 503, { error: "database_unavailable" });
+    }
   });
 }
 
@@ -243,6 +315,14 @@ setInterval(() => {
 
 server.headersTimeout = 8000;
 server.requestTimeout = 10000;
-server.listen(PORT, () => {
-  console.log(`Anonymous chat listening on http://localhost:${PORT}`);
-});
+
+initDatabase()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Anonymous chat listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database startup failed:", err.message);
+    process.exit(1);
+  });

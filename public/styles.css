@@ -1,14 +1,16 @@
 :root {
   color-scheme: dark;
-  --bg: #111414;
-  --panel: #18201f;
-  --panel-2: #202928;
-  --line: #31413e;
-  --text: #eef7f3;
-  --muted: #9fb0aa;
-  --accent: #58d6aa;
-  --accent-2: #ffb35c;
-  --danger: #ff7676;
+  --bg: #101112;
+  --rail: #151719;
+  --surface: #181b1d;
+  --surface-2: #202326;
+  --line: #2c3135;
+  --line-strong: #3a4146;
+  --text: #f1f3f4;
+  --muted: #a5adb4;
+  --soft: #c7ccd1;
+  --accent: #36c58a;
+  --danger: #ff6b6b;
 }
 
 * {
@@ -19,10 +21,7 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: Arial, "Noto Sans KR", sans-serif;
-  background:
-    linear-gradient(135deg, rgba(88, 214, 170, 0.1), transparent 38%),
-    linear-gradient(225deg, rgba(255, 179, 92, 0.11), transparent 42%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
 }
 
@@ -33,7 +32,7 @@ input {
 
 .chat-shell {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -41,26 +40,27 @@ input {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 18px 12px;
+  padding: 18px 10px;
   border-right: 1px solid var(--line);
-  background: rgba(11, 16, 16, 0.62);
+  background: var(--rail);
 }
 
 .online-pill {
   display: grid;
   justify-items: center;
-  gap: 4px;
-  width: 58px;
-  padding: 12px 6px;
-  border: 1px solid rgba(88, 214, 170, 0.42);
+  gap: 5px;
+  width: 54px;
+  padding: 10px 6px;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(24, 32, 31, 0.9);
+  background: var(--surface);
   color: var(--muted);
+  font-size: 12px;
 }
 
 .online-pill strong {
   color: var(--text);
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
 }
 
@@ -69,16 +69,15 @@ input {
   height: 9px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 14px var(--accent);
 }
 
 .room {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  width: min(980px, 100%);
+  width: min(920px, 100%);
   height: 100vh;
   margin: 0 auto;
-  padding: 24px;
+  padding: 22px 20px;
 }
 
 .room-header {
@@ -86,20 +85,15 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 0 0 18px;
-}
-
-.kicker {
-  margin: 0 0 6px;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
 }
 
 h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -116,10 +110,10 @@ h1 {
 
 .messages {
   overflow-y: auto;
-  padding: 18px;
+  padding: 4px 2px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(24, 32, 31, 0.74);
+  background: var(--surface);
 }
 
 .empty {
@@ -128,17 +122,20 @@ h1 {
   place-items: center;
   color: var(--muted);
   text-align: center;
+  font-size: 15px;
 }
 
 .message {
   display: grid;
-  gap: 7px;
-  max-width: 720px;
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border: 1px solid rgba(49, 65, 62, 0.86);
-  border-radius: 8px;
-  background: var(--panel-2);
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.message:last-child {
+  border-bottom: 0;
 }
 
 .meta {
@@ -146,49 +143,54 @@ h1 {
   align-items: center;
   gap: 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .alias {
-  color: var(--accent-2);
+  color: var(--soft);
   font-weight: 700;
 }
 
 .text {
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.55;
+  color: var(--text);
 }
 
 .composer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 86px;
-  gap: 10px;
-  padding-top: 14px;
+  grid-template-columns: minmax(0, 1fr) 78px;
+  gap: 8px;
+  padding-top: 12px;
 }
 
 .composer input {
   min-width: 0;
-  height: 48px;
+  height: 46px;
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
   outline: none;
-  background: #0f1414;
+  background: var(--surface);
   color: var(--text);
 }
 
 .composer input:focus {
-  border-color: var(--accent);
+  border-color: var(--line-strong);
 }
 
 .composer button {
-  height: 48px;
-  border: 0;
+  height: 46px;
+  border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: var(--accent);
-  color: #09201a;
-  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
   cursor: pointer;
+}
+
+.composer button:hover {
+  border-color: var(--accent);
 }
 
 .composer button:disabled {
@@ -198,7 +200,7 @@ h1 {
 
 @media (max-width: 640px) {
   .chat-shell {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr);
   }
 
   .side-rail {
@@ -206,11 +208,11 @@ h1 {
   }
 
   .online-pill {
-    width: 48px;
+    width: 44px;
   }
 
   .room {
-    padding: 16px 12px;
+    padding: 14px 10px;
   }
 
   .room-header {
@@ -224,7 +226,11 @@ h1 {
   }
 
   .messages {
-    padding: 12px;
+    padding: 0;
+  }
+
+  .message {
+    padding: 13px 12px;
   }
 
   .composer {
