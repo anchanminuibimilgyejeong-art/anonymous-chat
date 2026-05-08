@@ -1,0 +1,16 @@
+{
+  "name": "anonymous-chat-room",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deployable anonymous chat room with defensive defaults.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
