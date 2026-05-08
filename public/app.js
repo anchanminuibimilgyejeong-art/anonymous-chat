@@ -10,6 +10,8 @@ const nicknameInput = document.querySelector("#nicknameInput");
 let source;
 let hasMessages = false;
 let nickname = "";
+let clientId = "";
+let isConnected = false;
 
 function setStatus(text, bad = false) {
   statusEl.textContent = text;
@@ -64,12 +66,16 @@ function addMessage(message) {
 
 function connect() {
   if (source) source.close();
+  clientId = "";
+  isConnected = false;
   source = new EventSource("/events");
 
-  source.addEventListener("open", () => setStatus("연결됨"));
+  source.addEventListener("open", () => setStatus("확인 중"));
 
   source.addEventListener("hello", (event) => {
     const data = JSON.parse(event.data);
+    clientId = data.id || "";
+    isConnected = Boolean(clientId);
     onlineCountEl.textContent = String(data.count || 0);
     hasMessages = false;
     if (Array.isArray(data.history) && data.history.length) {
@@ -96,11 +102,12 @@ function connect() {
   });
 
   source.addEventListener("error", () => {
+    isConnected = false;
     if (source.readyState === EventSource.CLOSED) {
       setStatus("이미 접속 중", true);
       return;
     }
-    setStatus("재연결 중", true);
+    setStatus(clientId ? "재연결 중" : "이미 접속 중", true);
   });
 }
 
@@ -108,15 +115,23 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const message = input.value.trim();
   if (!message) return;
+  if (!isConnected || !clientId) {
+    setStatus("접속 안 됨", true);
+    return;
+  }
 
   const button = form.querySelector("button");
   button.disabled = true;
   try {
     const response = await fetch("/message", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Client-Id": clientId },
       body: JSON.stringify({ message, alias: nickname })
     });
+    if (response.status === 409) {
+      setStatus("접속 안 됨", true);
+      return;
+    }
     if (response.status === 429) {
       setStatus("천천히", true);
       return;

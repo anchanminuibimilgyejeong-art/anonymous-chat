@@ -261,6 +261,12 @@ function handleStream(req, res) {
 
 function handleMessage(req, res) {
   const identity = hashIdentity(req);
+  const activeClientId = activeIdentities.get(identity);
+  const clientId = String(req.headers["x-client-id"] || "");
+  if (!activeClientId || clientId !== activeClientId) {
+    sendJson(res, 409, { error: "not_connected" });
+    return;
+  }
   if (!tokenBucket(`post:${identity}`, 6, 0.25)) {
     sendJson(res, 429, { error: "slow_down" });
     return;
