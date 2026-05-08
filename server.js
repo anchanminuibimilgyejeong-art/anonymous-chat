@@ -11,9 +11,10 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 const clients = new Map();
+const activeIdentities = new Map();
 const recentMessages = [];
 const buckets = new Map();
-const MAX_CLIENTS = 500;
+const MAX_CLIENTS = 100;
 const MAX_ALIAS_LENGTH = 16;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_BODY_BYTES = 2048;
@@ -228,6 +229,10 @@ function handleStream(req, res) {
     sendJson(res, 503, { error: "room_full" });
     return;
   }
+  if (activeIdentities.has(identity)) {
+    sendJson(res, 409, { error: "already_connected" });
+    return;
+  }
   if (!tokenBucket(`stream:${identity}`, 8, 0.05)) {
     sendJson(res, 429, { error: "too_many_connections" });
     return;
@@ -243,11 +248,13 @@ function handleStream(req, res) {
 
   const id = crypto.randomUUID();
   clients.set(id, { res, lastSeen: Date.now() });
+  activeIdentities.set(identity, id);
   res.write(`event: hello\ndata: ${JSON.stringify({ id, history: recentMessages, count: clients.size })}\n\n`);
   broadcastPresence();
 
   req.on("close", () => {
     clients.delete(id);
+    activeIdentities.delete(identity);
     broadcastPresence();
   });
 }
@@ -349,6 +356,9 @@ setInterval(() => {
         client.res.end();
       } catch {}
       clients.delete(id);
+      for (const [identity, clientId] of activeIdentities) {
+        if (clientId === id) activeIdentities.delete(identity);
+      }
     }
   }
   for (const [key, bucket] of buckets) {

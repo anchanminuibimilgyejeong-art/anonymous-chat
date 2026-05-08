@@ -96,6 +96,10 @@ function connect() {
   });
 
   source.addEventListener("error", () => {
+    if (source.readyState === EventSource.CLOSED) {
+      setStatus("이미 접속 중", true);
+      return;
+    }
     setStatus("재연결 중", true);
   });
 }
