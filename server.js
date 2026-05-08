@@ -8,11 +8,13 @@ const PORT = Number(process.env.PORT || 3000);
 const PUBLIC_DIR = path.join(__dirname, "public");
 const SERVER_SECRET = process.env.SERVER_SECRET || crypto.randomBytes(32).toString("hex");
 const DATABASE_URL = process.env.DATABASE_URL;
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
 
 const clients = new Map();
 const recentMessages = [];
 const buckets = new Map();
 const MAX_CLIENTS = 500;
+const MAX_ALIAS_LENGTH = 16;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_BODY_BYTES = 2048;
 const MESSAGE_HISTORY = 40;
@@ -78,6 +80,15 @@ function cleanText(value) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, MAX_MESSAGE_LENGTH);
+}
+
+function cleanAlias(value, fallback) {
+  const alias = String(value || "")
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_ALIAS_LENGTH);
+  return alias || fallback;
 }
 
 function broadcast(event, data) {
@@ -158,8 +169,15 @@ async function saveMessage(message) {
   `, [MESSAGE_HISTORY]);
 }
 
+async function clearMessages() {
+  recentMessages.length = 0;
+  if (dbPool) {
+    await dbPool.query("DELETE FROM messages");
+  }
+}
+
 function serveStatic(req, res, pathname) {
-  const requested = pathname === "/" ? "/index.html" : pathname;
+  const requested = pathname === "/" ? "/index.html" : pathname === "/admin" ? "/admin.html" : pathname;
   const filePath = path.normalize(path.join(PUBLIC_DIR, requested));
   if (filePath !== PUBLIC_DIR && !filePath.startsWith(`${PUBLIC_DIR}${path.sep}`)) {
     sendJson(res, 403, { error: "forbidden" });
@@ -250,7 +268,7 @@ function handleMessage(req, res) {
 
     const message = {
       id: crypto.randomUUID(),
-      alias: `익명-${identity.slice(0, 4)}`,
+      alias: cleanAlias(body.alias, `익명-${identity.slice(0, 4)}`),
       text,
       at: Date.now()
     };
@@ -269,6 +287,28 @@ function handleMessage(req, res) {
   });
 }
 
+function handleAdminClear(req, res) {
+  if (!ADMIN_SECRET) {
+    sendJson(res, 403, { error: "admin_disabled" });
+    return;
+  }
+  const secret = String(req.headers["x-admin-secret"] || "");
+  if (secret !== ADMIN_SECRET) {
+    sendJson(res, 403, { error: "forbidden" });
+    return;
+  }
+
+  clearMessages()
+    .then(() => {
+      broadcast("clear", { ok: true });
+      sendJson(res, 200, { ok: true });
+    })
+    .catch((err) => {
+      console.error("Failed to clear messages:", err.message);
+      sendJson(res, 503, { error: "clear_failed" });
+    });
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const identity = hashIdentity(req);
@@ -285,6 +325,11 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "POST" && url.pathname === "/message") {
     handleMessage(req, res);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/admin/clear") {
+    handleAdminClear(req, res);
     return;
   }
 

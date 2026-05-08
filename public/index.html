@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>익명 채팅방</title>
-    <link rel="stylesheet" href="/styles.css?v=3" />
+    <link rel="stylesheet" href="/styles.css?v=4" />
   </head>
   <body>
     <main class="chat-shell">
@@ -21,7 +21,7 @@
           <div>
             <h1>익명 채팅방</h1>
           </div>
-          <div id="status" class="status">연결 중</div>
+          <div id="status" class="status">대기 중</div>
         </header>
 
         <div id="messages" class="messages" aria-live="polite"></div>
@@ -41,6 +41,22 @@
       </section>
     </main>
 
-    <script src="/app.js?v=3" defer></script>
+    <div id="nameGate" class="name-gate" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+      <form id="nameForm" class="name-panel" autocomplete="off">
+        <h2 id="nameTitle">닉네임 선택</h2>
+        <input
+          id="nicknameInput"
+          name="nickname"
+          type="text"
+          maxlength="16"
+          placeholder="닉네임"
+          aria-label="닉네임"
+          required
+        />
+        <button type="submit">입장</button>
+      </form>
+    </div>
+
+    <script src="/app.js?v=4" defer></script>
   </body>
 </html>

@@ -3,9 +3,13 @@ const onlineCountEl = document.querySelector("#onlineCount");
 const statusEl = document.querySelector("#status");
 const form = document.querySelector("#chatForm");
 const input = document.querySelector("#messageInput");
+const nameGate = document.querySelector("#nameGate");
+const nameForm = document.querySelector("#nameForm");
+const nicknameInput = document.querySelector("#nicknameInput");
 
 let source;
 let hasMessages = false;
+let nickname = "";
 
 function setStatus(text, bad = false) {
   statusEl.textContent = text;
@@ -18,6 +22,11 @@ function showEmpty() {
   empty.className = "empty";
   empty.textContent = "아직 메시지가 없습니다.";
   messagesEl.append(empty);
+}
+
+function clearMessages() {
+  hasMessages = false;
+  showEmpty();
 }
 
 function addMessage(message) {
@@ -81,6 +90,11 @@ function connect() {
     addMessage(JSON.parse(event.data));
   });
 
+  source.addEventListener("clear", () => {
+    clearMessages();
+    setStatus("초기화됨");
+  });
+
   source.addEventListener("error", () => {
     setStatus("재연결 중", true);
   });
@@ -97,7 +111,7 @@ form.addEventListener("submit", async (event) => {
     const response = await fetch("/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message, alias: nickname })
     });
     if (response.status === 429) {
       setStatus("천천히", true);
@@ -117,5 +131,16 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+nameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  nickname = nicknameInput.value.replace(/\s+/g, " ").trim().slice(0, 16);
+  if (!nickname) return;
+  nameGate.hidden = true;
+  input.focus();
+  setStatus("연결 중");
+  showEmpty();
+  connect();
+});
+
 showEmpty();
-connect();
+nicknameInput.focus();
